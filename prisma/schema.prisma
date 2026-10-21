@@ -1,0 +1,217 @@
+// Schema Prisma para o Sistema de Gestão Epidemiológica de Tuberculose (EpiGestão TB - Moçambique / PNCT)
+// Base de Dados: PostgreSQL
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// --- ENUMS ---
+
+enum NivelRisco {
+  CRITICO   @map("Crítico")
+  ALTO      @map("Alto")
+  MODERADO  @map("Moderado")
+  BAIXO     @map("Baixo")
+}
+
+enum NivelStock {
+  ADEQUADO          @map("Adequado")
+  AVISO_BAIXO       @map("Aviso (Baixo)")
+  CRITICO_ESGOTADO  @map("Crítico (Esgotado)")
+}
+
+enum TipoUnidadeSanitaria {
+  HOSPITAL_PROVINCIAL     @map("Hospital Provincial")
+  CENTRO_DE_SAUDE         @map("Centro de Saúde")
+  POSTO_TB_COMUNITARIO    @map("Posto TB Comunitário")
+  DISPENSARIO_ESPECIALIZO @map("Dispensário Especializado")
+}
+
+enum TipoTB {
+  PULMONAR_SMEAR_POS    @map("Pulmonar Smear+")
+  PULMONAR_SMEAR_NEG    @map("Pulmonar Smear-")
+  EXTRAPULMONAR         @map("Extrapulmonar")
+  MULTIRRESISTENTE_MDR  @map("Multirresistente (MDR)")
+}
+
+enum EstadoPaciente {
+  EM_TRATAMENTO @map("Em Tratamento")
+  SUSPEITO      @map("Suspeito")
+  CURADO        @map("Curado")
+  ABANDONO      @map("Abandono")
+  OBITO         @map("Óbito")
+}
+
+enum FaseTratamento {
+  FASE_INTENSIVA_2RHZE @map("Fase Intensiva (2RHZE)")
+  FASE_MANUTENCAO_4RH  @map("Fase de Manutenção (4RH)")
+  TRATAMENTO_MDR_24M   @map("Tratamento MDR (18-24M)")
+  CONCLUIDO            @map("Concluído")
+  NAO_INICIADO         @map("Não Iniciado")
+}
+
+enum AdesaoTratamento {
+  EXCELENTE @map("Excelente (>95%)")
+  REGULAR   @map("Regular (80-95%)")
+  IRREGULAR @map("Irregular (<80%)")
+}
+
+enum TipoExame {
+  BACILOSCOPIA_BK      @map("Baciloscopia (BK)")
+  GENEXPERT_MTB_RIF    @map("GeneXpert MTB/RIF")
+  RAIO_X_TORAX        @map("Raio-X de Tórax (RX)")
+  CULTURA_ANTIBIOGRAMA @map("Cultura / Antibiograma")
+  HEMOGRAMA_BIOQUIMICA @map("Hemograma / Bioquímica")
+  TESTE_HIV            @map("Teste HIV")
+}
+
+enum Genero {
+  MASCULINO @map("Masculino")
+  FEMININO  @map("Feminino")
+}
+
+// --- MODELOS ---
+
+model Provincias {
+  id                   String        @id @default(uuid())
+  nome                 String        @unique
+  codigo               String        @unique // ex: MPT, NMP, SOF
+  populacao            Int
+  casosActivos         Int           @default(0)
+  totalCasosHistoricos Int           @default(0)
+  casosCurados         Int           @default(0)
+  taxaIncidencia100k   Float         @default(0.0)
+  nivelRisco           NivelRisco    @default(MODERADO)
+
+  localidades          Localidades[]
+  unidadesSanitarias   UnidadesSanitarias[]
+  pacientes            Pacientes[]
+
+  criadoEm             DateTime      @default(now())
+  atualizadoEm         DateTime      @updatedAt
+
+  @@map("provincias")
+}
+
+model Localidades {
+  id                   String        @id @default(uuid())
+  provinciaId          String
+  nome                 String
+  populacao            Int
+  casosActivos         Int           @default(0)
+  casosCurados         Int           @default(0)
+  casosMdr             Int           @default(0)
+  taxaIncidencia100k   Float         @default(0.0)
+  nivelRisco           NivelRisco    @default(MODERADO)
+
+  provincia            Provincias    @relation(fields: [provinciaId], references: [id], onDelete: Cascade)
+  unidadesSanitarias   UnidadesSanitarias[]
+  pacientes            Pacientes[]
+
+  criadoEm             DateTime      @default(now())
+  atualizadoEm         DateTime      @updatedAt
+
+  @@map("localidades")
+}
+
+model UnidadesSanitarias {
+  id                    String               @id @default(uuid())
+  nome                  String
+  codigo                String               @unique // ex: CS-BGM-01
+  provinciaId           String
+  localidadeId          String
+  tipo                  TipoUnidadeSanitaria @default(CENTRO_DE_SAUDE)
+  endereco              String
+  telefone              String?
+  responsavelTecnico    String
+  genexpertDisponivel   Boolean              @default(false)
+  microscopiaDisponivel Boolean              @default(true)
+  nivelStockMedicamentos NivelStock          @default(ADEQUADO)
+  totalPacientesAtribuidos Int               @default(0)
+
+  provincia             Provincias           @relation(fields: [provinciaId], references: [id])
+  localidade            Localidades          @relation(fields: [localidadeId], references: [id])
+  pacientes             Pacientes[]
+
+  criadoEm              DateTime             @default(now())
+  atualizadoEm          DateTime             @updatedAt
+
+  @@map("unidades_sanitarias")
+}
+
+model Pacientes {
+  id                   String            @id @default(uuid())
+  codigo               String            @unique // ex: TB-2026-001
+  nome                 String
+  idade                Int
+  genero               Genero
+  documentoIdentidade  String?           // BI / NUIT
+  telefone             String?
+  endereco             String
+  provinciaId          String
+  localidadeId         String
+  unidadeSanitariaId   String
+  tipoTB               TipoTB
+  estado               EstadoPaciente    @default(EM_TRATAMENTO)
+  faseTratamento       FaseTratamento    @default(FASE_INTENSIVA_2RHZE)
+  dataInicioTratamento DateTime
+  supervisionadoTDO    Boolean           @default(true) // Tratamento Diretamente Observado (DOTS)
+  contactosRastreados  Int               @default(0)
+  comorbilidades       String[]          // ex: ["HIV", "Diabetes"]
+  resultadoBaciloscopia String           @default("Pendente")
+  notasClinicas        String?           @db.Text
+
+  provincia            Provincias        @relation(fields: [provinciaId], references: [id])
+  localidade           Localidades       @relation(fields: [localidadeId], references: [id])
+  unidadeSanitaria     UnidadesSanitarias @relation(fields: [unidadeSanitariaId], references: [id])
+
+  consultas            Consultas[]
+  exames               Exames[]
+
+  criadoEm             DateTime          @default(now())
+  atualizadoEm         DateTime          @updatedAt
+
+  @@map("pacientes")
+}
+
+model Consultas {
+  id                   String            @id @default(uuid())
+  pacienteId           String
+  dataConsulta         DateTime
+  profissionalSaude    String
+  pesoKg               Float
+  sintomas             String            @db.Text
+  notasClinicas        String            @db.Text
+  adesaoTratamento     AdesaoTratamento  @default(EXCELENTE)
+  proximaConsultaData  DateTime?
+
+  paciente             Pacientes         @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+
+  criadoEm             DateTime          @default(now())
+  atualizadoEm         DateTime          @updatedAt
+
+  @@map("consultas")
+}
+
+model Exames {
+  id                   String            @id @default(uuid())
+  pacienteId           String
+  dataExame            DateTime
+  tipo                 TipoExame
+  resultado            String
+  laboratorio          String
+  nomeAnexo            String?
+  observacoes          String?           @db.Text
+
+  paciente             Pacientes         @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+
+  criadoEm             DateTime          @default(now())
+  atualizadoEm         DateTime          @updatedAt
+
+  @@map("exames")
+}

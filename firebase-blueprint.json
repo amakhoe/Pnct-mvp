@@ -1,0 +1,124 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Perfil de utilizador autenticado e operador de saúde",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID único do utilizador" },
+        "email": { "type": "string", "description": "Endereço de e-mail do utilizador" },
+        "displayName": { "type": "string", "description": "Nome completo do profissional" },
+        "role": { "type": "string", "description": "Papel no sistema sanitário", "enum": ["medico", "enfermeiro", "tecnico_tb", "administrador"] },
+        "createdAt": { "type": "string", "description": "Timestamp de registo" }
+      },
+      "required": ["id", "email", "displayName", "role"]
+    },
+    "Patient": {
+      "title": "Patient",
+      "description": "Ficha clínica do paciente sob vigilância e tratamento de TB",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Identificador do registo de paciente" },
+        "code": { "type": "string", "description": "Código de notificação nacional PNCT" },
+        "name": { "type": "string", "description": "Nome completo do paciente" },
+        "age": { "type": "number", "description": "Idade em anos" },
+        "gender": { "type": "string", "enum": ["Masculino", "Feminino"], "description": "Género biológico" },
+        "identityDoc": { "type": "string", "description": "BI, Cédula ou documento oficial" },
+        "phone": { "type": "string", "description": "Contacto telefónico de emergência ou pessoal" },
+        "address": { "type": "string", "description": "Endereço residencial e bairro" },
+        "provinceId": { "type": "string", "description": "ID da província de residência" },
+        "localityId": { "type": "string", "description": "ID do distrito ou localidade" },
+        "healthPostId": { "type": "string", "description": "ID da unidade sanitária de acompanhamento" },
+        "tbType": { "type": "string", "enum": ["Pulmonar Smear+", "Pulmonar Smear-", "Extrapulmonar", "Multirresistente (MDR)"] },
+        "status": { "type": "string", "enum": ["Em Tratamento", "Suspeito", "Curado", "Abandono", "Óbito"] },
+        "treatmentPhase": { "type": "string", "enum": ["Fase Intensiva (2RHZE)", "Fase de Manutenção (4RH)", "Tratamento MDR (18-24M)", "Regime Curto Oral MDR (9-11M)", "Concluído", "Não Iniciado"] },
+        "startDate": { "type": "string", "description": "Data de início do tratamento (YYYY-MM-DD)" },
+        "dotsSupervised": { "type": "boolean", "description": "Supervisão direta por TDO/DOTS" },
+        "contactTracingCount": { "type": "number", "description": "Contactos intradomiciliares rastreados" },
+        "comorbidities": { "type": "array", "description": "Lista de comorbilidades associadas" },
+        "sputumSmearResult": { "type": "string", "enum": ["Positivo (+++)", "Positivo (++)", "Positivo (+)", "Negativo", "Pendente"] },
+        "notes": { "type": "string", "description": "Observações clínicas complementares" },
+        "createdBy": { "type": "string", "description": "UID do profissional que registou o caso" },
+        "updatedAt": { "type": "string", "description": "Data da última atualização" }
+      },
+      "required": ["id", "code", "name", "provinceId", "localityId", "healthPostId", "tbType", "status", "treatmentPhase"]
+    },
+    "Province": {
+      "title": "Province",
+      "description": "Divisão provincial de Moçambique com indicadores epidemiológicos",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID único da província" },
+        "name": { "type": "string", "description": "Nome da província" },
+        "code": { "type": "string", "description": "Código abreviado oficial" },
+        "population": { "type": "number", "description": "População estimada" },
+        "activeCases": { "type": "number", "description": "Total de casos activos" },
+        "totalHistoricalCases": { "type": "number", "description": "Total acumulado de casos" },
+        "curedCases": { "type": "number", "description": "Total de pacientes curados" },
+        "incidenceRatePer100k": { "type": "number", "description": "Taxa de incidência bacteriológica estimada por 100 mil habitantes" },
+        "riskLevel": { "type": "string", "enum": ["Crítico", "Moderado", "Baixo"] }
+      },
+      "required": ["id", "name", "code", "population", "riskLevel"]
+    },
+    "Locality": {
+      "title": "Locality",
+      "description": "Distrito sanitário ou município em Moçambique",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID único do distrito/localidade" },
+        "provinceId": { "type": "string", "description": "ID da província à qual pertence" },
+        "name": { "type": "string", "description": "Nome do distrito ou município" },
+        "population": { "type": "number", "description": "População do distrito" },
+        "activeCases": { "type": "number", "description": "Casos activos no distrito" },
+        "curedCases": { "type": "number", "description": "Casos curados no distrito" },
+        "mdrCases": { "type": "number", "description": "Casos de TB multirresistente" },
+        "incidenceRatePer100k": { "type": "number", "description": "Taxa de incidência por 100 mil habitantes" },
+        "riskLevel": { "type": "string", "enum": ["Alto", "Moderado", "Baixo"] }
+      },
+      "required": ["id", "provinceId", "name", "population", "riskLevel"]
+    },
+    "HealthPost": {
+      "title": "HealthPost",
+      "description": "Unidade sanitária ou centro de tratamento e acompanhamento de TB",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID da unidade sanitária" },
+        "name": { "type": "string", "description": "Nome da unidade sanitária" },
+        "code": { "type": "string", "description": "Código da unidade sanitária" },
+        "provinceId": { "type": "string", "description": "ID da província" },
+        "localityId": { "type": "string", "description": "ID do distrito/localidade" },
+        "type": { "type": "string", "enum": ["Hospital Central / Provincial", "Hospital Geral / Rural", "Centro de Saúde", "Posto TB Comunitário", "Dispensário Especializado"] },
+        "address": { "type": "string", "description": "Endereço físico" },
+        "phone": { "type": "string", "description": "Contacto telefónico" },
+        "technicalLead": { "type": "string", "description": "Responsável técnico pelo programa TB" },
+        "genexpertAvailable": { "type": "boolean", "description": "Disponibilidade de teste molecular GeneXpert" },
+        "microscopyAvailable": { "type": "boolean", "description": "Disponibilidade de microscopia directa" },
+        "medicineStockLevel": { "type": "string", "enum": ["Adequado", "Aviso (Baixo)", "Crítico (Esgotado)"] },
+        "assignedPatientsCount": { "type": "number", "description": "Número de pacientes acompanhados" }
+      },
+      "required": ["id", "name", "code", "provinceId", "localityId", "type"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Colecção de perfis de profissionais de saúde registados"
+    },
+    "/patients/{patientId}": {
+      "schema": "Patient",
+      "description": "Colecção de fichas clínicas de pacientes com TB"
+    },
+    "/provinces/{provinceId}": {
+      "schema": "Province",
+      "description": "Colecção de indicadores epidemiológicos das 11 províncias de Moçambique"
+    },
+    "/localities/{localityId}": {
+      "schema": "Locality",
+      "description": "Colecção de distritos e municípios sanitários de Moçambique"
+    },
+    "/healthPosts/{healthPostId}": {
+      "schema": "HealthPost",
+      "description": "Colecção de unidades sanitárias e postos TB"
+    }
+  }
+}

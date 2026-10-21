@@ -1,0 +1,6 @@
+{
+  "name": "Gestão de Tuberculose",
+  "description": "Sistema de vigilância epidemiológica e gestão de tuberculose em Moçambique (MISAU/PNCT), abrangendo as 11 províncias, distritos municipais, unidades sanitárias e análise de zonas de risco.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
